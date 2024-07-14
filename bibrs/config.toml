@@ -1,0 +1,33 @@
+[tool]
+
+# Default editor used to open notes.
+editor = "nvim"
+
+# Pager used to scroll through long output.
+pager = "less -FIRX"
+
+# Command used to preview a note during interactive fzf mode.
+fzf-preview = "bat -p --color always {-1}"
+
+[database]
+# where to store your database, default is your system data directory
+# linux/mac: ~/.local/share/atuin/history.db
+# windows: %USERPROFILE%/.local/share/atuin/history.db
+db_path = "~/.local/share/zoters/bibliography.db"
+
+
+[pdf]
+
+verbose = True
+
+format = {YYYY} - {Jabbr} - {A3etal} - {T}
+
+max_length_authors = 80
+
+max_length_filename = 250
+
+max_words_title = 20
+
+check_subfolders = False
+
+case = none

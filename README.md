@@ -1,2 +1,2 @@
 # bibrs
-(WIP) terminal bibliography management tool 
+(WIP) learning rust by building a terminal bibliography management tool

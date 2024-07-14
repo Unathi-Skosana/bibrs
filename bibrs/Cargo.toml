@@ -1,0 +1,21 @@
+[package]
+name = "bibrs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.72"
+clap = { version = "4.3.19", features = ["derive"] }
+futures = "0.3.28"
+nom-bibtex = { git = "https://github.com/charlesvdv/nom-bibtex", version = "0.4.0" }
+regex = "1.9.1"
+reqwest = { version = "0.11.18", features = ["blocking", "json"] }
+serde = "1.0.180"
+serde_json = "1.0.104"
+sqlx = { version = "0.7.1", features = ["postgres", "runtime-tokio-native-tls"] }
+tempfile = "3.7.0"
+tokio = { version = "1.29.1", features = ["rt", "macros"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.17"
