@@ -7,7 +7,7 @@ use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
 use sqlx::types::JsonValue;
 use sqlx::Row;
 use std::io::Write;
-use std::{env::var, fs::File, io::Read, process::Command as CMD, process::Stdio, str};
+use std::{env::var, fs::File, io::Read, process::Command as CMD, process::Stdio, str, vec::Vec};
 use tempfile::NamedTempFile;
 use tracing::info;
 use tracing_subscriber;
@@ -186,17 +186,24 @@ async fn main() -> anyhow::Result<()> {
             }
         }
         Some(("list", sub_matches)) => {
-            if let Some(query) = sub_matches.get_one::<String>("query") { // handle query searches
+            if let Some(query) = sub_matches.get_one::<String>("query") {
+                // handle query searches
                 let entries: Vec<PgRow> = list_query_matches(&pool, &query).await?;
-                entries
-                    .iter()
-                    .for_each(|t| info!("{}", t.get::<String, _>("title")))
-            } else if let Some(tag) = sub_matches.get_one::<String>("tag") { // handle tag searches
+                entries.iter().for_each(|t| {
+                    info!(
+                        "{} - {}",
+                        t.get::<String, _>("cite_key"),
+                        t.get::<String, _>("title")
+                    )
+                })
+            } else if let Some(tag) = sub_matches.get_one::<String>("tag") {
+                // handle tag searches
                 let entries: Vec<PgRow> = list_query_matches(&pool, &tag).await?;
                 entries
                     .iter()
                     .for_each(|t| info!("{}", t.get::<String, _>("title")));
-            } else { // interactive search
+            } else {
+                // interactive search
                 let entries: Vec<PgRow> = list_entries(&pool).await?;
                 let key = run_fzf_pipeline(entries)?;
 
@@ -375,14 +382,21 @@ async fn edit_entry(pool: &PgPool, key: &str) -> anyhow::Result<()> {
 
 // Function to run the fzf pipeline
 fn run_fzf_pipeline(entries: Vec<PgRow>) -> anyhow::Result<String> {
-    let fzf = entries
+    let fmt_entries: Vec<String> = entries
         .iter()
-        .map(|s| s.get::<String, _>("cite_key"))
-        .reduce(|a: String, b: String| a + "\n" + &b)
-        .unwrap();
+        .map(|s| {
+            format!(
+                "{} - {}",
+                s.get::<String, _>("cite_key"),
+                s.get::<String, _>("title")
+            )
+        })
+        .collect();
+
+    let fzf_input = fmt_entries.join("\n");
 
     let echo_child = CMD::new("echo")
-        .arg(fzf)
+        .arg(fzf_input)
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
@@ -393,10 +407,17 @@ fn run_fzf_pipeline(entries: Vec<PgRow>) -> anyhow::Result<String> {
         .stdin(Stdio::from(echo_out))
         .stdout(Stdio::piped())
         .spawn()
-        .expect("Failed to start sed process");
+        .expect("Failed to start fzf process");
 
     let output = fzf_child.wait_with_output().unwrap();
-    let key = str::from_utf8(&output.stdout).unwrap().trim().to_string();
+    let selected = str::from_utf8(&output.stdout).unwrap().trim().to_string();
 
-    Ok(key)
+    let index = fmt_entries
+        .iter()
+        .position(|entry| entry == &selected)
+        .expect("Key not found");
+
+    info!("Selected index: {}", index);
+
+    Ok(entries[index].get::<String, _>("cite_key"))
 }
